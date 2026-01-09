@@ -1,0 +1,252 @@
+{
+  "name": "claude-session-manager",
+  "displayName": "Claude Session Manager",
+  "description": "Manage multiple Claude Code CLI sessions from VS Code/Cursor",
+  "version": "0.5.0",
+  "publisher": "mint-lab",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "claudeSessionList",
+          "name": "Claude Sessions",
+          "contextualTitle": "Claude Sessions"
+        },
+        {
+          "id": "claudeSessionSearch",
+          "name": "Claude Search",
+          "contextualTitle": "Search Transcripts",
+          "type": "webview"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "claudeSessions.newSession",
+        "title": "New Claude Session",
+        "icon": "$(add)"
+      },
+      {
+        "command": "claudeSessions.openSession",
+        "title": "Open Session",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "claudeSessions.forkSession",
+        "title": "Fork Session",
+        "icon": "$(git-branch)"
+      },
+      {
+        "command": "claudeSessions.renameSession",
+        "title": "Rename Session",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "claudeSessions.archiveSession",
+        "title": "Archive Session",
+        "icon": "$(archive)"
+      },
+      {
+        "command": "claudeSessions.unarchiveSession",
+        "title": "Restore from Archive",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "claudeSessions.refresh",
+        "title": "Refresh Sessions",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "claudeSessions.searchTranscripts",
+        "title": "Search Transcripts",
+        "icon": "$(search)"
+      },
+      {
+        "command": "claudeSessions.configureFlags",
+        "title": "Configure Flags",
+        "icon": "$(settings-gear)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "claudeSessions.newSession",
+          "when": "view == claudeSessionList",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.refresh",
+          "when": "view == claudeSessionList",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeSessions.configureFlags",
+          "when": "view == claudeSessionList",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "claudeSessions.openSession",
+          "when": "view == claudeSessionList && viewItem == session",
+          "group": "inline"
+        },
+        {
+          "command": "claudeSessions.forkSession",
+          "when": "view == claudeSessionList && viewItem == session",
+          "group": "inline"
+        },
+        {
+          "command": "claudeSessions.renameSession",
+          "when": "view == claudeSessionList && viewItem == session",
+          "group": "context"
+        },
+        {
+          "command": "claudeSessions.archiveSession",
+          "when": "view == claudeSessionList && viewItem == session",
+          "group": "context"
+        },
+        {
+          "command": "claudeSessions.openSession",
+          "when": "view == claudeSessionList && viewItem == archivedSession",
+          "group": "inline"
+        },
+        {
+          "command": "claudeSessions.unarchiveSession",
+          "when": "view == claudeSessionList && viewItem == archivedSession",
+          "group": "inline"
+        },
+        {
+          "command": "claudeSessions.renameSession",
+          "when": "view == claudeSessionList && viewItem == archivedSession",
+          "group": "context"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Claude Session Manager",
+      "properties": {
+        "claudeSessions.defaultModel": {
+          "type": "string",
+          "default": "sonnet",
+          "enum": ["sonnet", "opus", "haiku"],
+          "enumDescriptions": [
+            "Claude Sonnet - Fast and capable (default)",
+            "Claude Opus - Most capable, best for complex tasks",
+            "Claude Haiku - Fastest, good for simple tasks"
+          ],
+          "description": "Default Claude model for new sessions"
+        },
+        "claudeSessions.defaultPermissionMode": {
+          "type": "string",
+          "default": "default",
+          "enum": ["default", "acceptEdits", "plan", "bypassPermissions", "delegate", "dontAsk"],
+          "enumDescriptions": [
+            "Default - Ask for permission on each action",
+            "Accept Edits - Auto-accept file edits, ask for other actions",
+            "Plan Mode - Research and plan only, no code changes",
+            "Bypass Permissions - Skip all permission prompts",
+            "Delegate - Delegate permission decisions to sub-agents",
+            "Don't Ask - Never ask, deny actions that would need permission"
+          ],
+          "description": "Default permission mode for new sessions"
+        },
+        "claudeSessions.dangerouslySkipPermissions": {
+          "type": "boolean",
+          "default": false,
+          "description": "DANGER: Bypass ALL permission checks. Only use in sandboxed environments."
+        },
+        "claudeSessions.defaultProjectPath": {
+          "type": "string",
+          "default": "",
+          "description": "Default project folder for new sessions (empty = workspace root)"
+        },
+        "claudeSessions.claudeCommand": {
+          "type": "string",
+          "default": "claude",
+          "description": "Path to claude CLI executable"
+        },
+        "claudeSessions.appendSystemPrompt": {
+          "type": "string",
+          "default": "",
+          "description": "Text to append to the default system prompt for all sessions"
+        },
+        "claudeSessions.allowedTools": {
+          "type": "string",
+          "default": "",
+          "description": "Space-separated list of allowed tools (e.g. 'Bash(git:*) Edit Read')"
+        },
+        "claudeSessions.disallowedTools": {
+          "type": "string",
+          "default": "",
+          "description": "Space-separated list of disallowed tools (e.g. 'Bash Edit')"
+        },
+        "claudeSessions.verbose": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable verbose output for all sessions"
+        },
+        "claudeSessions.autoCompact": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable automatic context compaction (recommended: off for long sessions)"
+        },
+        "claudeSessions.alwaysThinking": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable extended thinking mode"
+        },
+        "claudeSessions.customSettings": {
+          "type": "string",
+          "default": "",
+          "description": "Additional settings as JSON (e.g. '{\"agent\": \"my-agent\"}')"
+        },
+        "claudeSessions.showHistoricalSessions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show historical (non-running) sessions in the list"
+        },
+        "claudeSessions.maxSessionsToShow": {
+          "type": "number",
+          "default": 50,
+          "description": "Maximum number of sessions to display in the list"
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "claudeSessions.newSession",
+        "key": "cmd+shift+c",
+        "mac": "cmd+shift+c",
+        "when": "!terminalFocus"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {}
+}
