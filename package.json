@@ -2,7 +2,7 @@
   "name": "claude-session-manager",
   "displayName": "Claude Session Manager",
   "description": "Manage multiple Claude Code CLI sessions from VS Code/Cursor",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "publisher": "mint-lab",
   "engines": {
     "vscode": "^1.85.0"
@@ -175,6 +175,16 @@
           "type": "string",
           "default": "claude",
           "description": "Path to claude CLI executable"
+        },
+        "claudeSessions.useSpecStory": {
+          "type": "boolean",
+          "default": false,
+          "description": "Wrap sessions with SpecStory for cross-machine sync and searchable Markdown transcripts"
+        },
+        "claudeSessions.specStoryCommand": {
+          "type": "string",
+          "default": "specstory",
+          "description": "Path to specstory CLI executable"
         },
         "claudeSessions.appendSystemPrompt": {
           "type": "string",

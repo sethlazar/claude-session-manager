@@ -48,6 +48,37 @@ export class SessionManager {
     }
 
     /**
+     * Check if SpecStory wrapping is enabled
+     */
+    private useSpecStory(): boolean {
+        const config = vscode.workspace.getConfiguration('claudeSessions');
+        return config.get<boolean>('useSpecStory') || false;
+    }
+
+    /**
+     * Get the specstory command path
+     */
+    private getSpecStoryCommand(): string {
+        const config = vscode.workspace.getConfiguration('claudeSessions');
+        return config.get<string>('specStoryCommand') || 'specstory';
+    }
+
+    /**
+     * Build the final command string, optionally wrapped with SpecStory
+     */
+    private buildCommand(claudeCmd: string, flags: string[]): string {
+        const claudeWithFlags = [claudeCmd, ...flags].join(' ');
+
+        if (this.useSpecStory()) {
+            const specstoryCmd = this.getSpecStoryCommand();
+            // Use -c to pass the full claude command with flags
+            return `${specstoryCmd} run -c "${claudeWithFlags}"`;
+        }
+
+        return claudeWithFlags;
+    }
+
+    /**
      * Get default flags from settings
      */
     private getDefaultFlagsFromSettings(): string[] {
@@ -121,8 +152,9 @@ export class SessionManager {
         }
 
         // Add --settings flag if we have any settings
+        // Note: JSON needs to be single-quoted for shell
         if (Object.keys(settingsObj).length > 0) {
-            flags.push('--settings', JSON.stringify(settingsObj));
+            flags.push('--settings', `'${JSON.stringify(settingsObj)}'`);
         }
 
         return flags;
@@ -172,12 +204,11 @@ export class SessionManager {
         const defaultFlags = this.getDefaultFlagsFromSettings();
         const allFlags = [...defaultFlags, ...flags];
 
-        // Build command
-        const cmdParts = [claudeCmd, ...allFlags];
-        const cmdString = cmdParts.join(' ');
+        // Build command (with optional SpecStory wrapping)
+        const cmdString = this.buildCommand(claudeCmd, allFlags);
 
         // Create terminal with a descriptive name
-        const terminalName = `Claude: New Session`;
+        const terminalName = this.useSpecStory() ? `Claude (SpecStory): New Session` : `Claude: New Session`;
         const terminal = vscode.window.createTerminal({
             name: terminalName,
             cwd: cwd
@@ -207,13 +238,14 @@ export class SessionManager {
         const displayName = this.metadataManager.getSessionName(session.id) ||
                            `Session ${session.id.slice(0, 8)}`;
 
+        const terminalPrefix = this.useSpecStory() ? 'Claude (SpecStory)' : 'Claude';
         const terminal = vscode.window.createTerminal({
-            name: `Claude: ${displayName}`,
+            name: `${terminalPrefix}: ${displayName}`,
             cwd: cwd
         });
 
         terminal.show();
-        terminal.sendText(`${claudeCmd} ${flags.join(' ')}`);
+        terminal.sendText(this.buildCommand(claudeCmd, flags));
 
         this.activeTerminals.set(session.id, { terminal, sessionId: session.id });
     }
@@ -235,13 +267,14 @@ export class SessionManager {
         const parentName = this.metadataManager.getSessionName(parentSession.id) ||
                           `Session ${parentSession.id.slice(0, 8)}`;
 
+        const terminalPrefix = this.useSpecStory() ? 'Claude (SpecStory)' : 'Claude';
         const terminal = vscode.window.createTerminal({
-            name: `Claude: Fork of ${parentName}`,
+            name: `${terminalPrefix}: Fork of ${parentName}`,
             cwd: cwd
         });
 
         terminal.show();
-        terminal.sendText(`${claudeCmd} ${flags.join(' ')}`);
+        terminal.sendText(this.buildCommand(claudeCmd, flags));
 
         // Store that we forked this session
         // The actual child session ID will be determined when the session starts
@@ -265,13 +298,14 @@ export class SessionManager {
         const claudeCmd = this.getClaudeCommand();
         const cwd = this.getDefaultProjectPath();
 
+        const terminalPrefix = this.useSpecStory() ? 'Claude (SpecStory)' : 'Claude';
         const terminal = vscode.window.createTerminal({
-            name: 'Claude: Continue',
+            name: `${terminalPrefix}: Continue`,
             cwd: cwd
         });
 
         terminal.show();
-        terminal.sendText(`${claudeCmd} --continue`);
+        terminal.sendText(this.buildCommand(claudeCmd, ['--continue']));
     }
 
     /**
